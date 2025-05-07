@@ -12,12 +12,8 @@ public class RandomHeuristic implements Heuristic {
             int capacity) {
         List<List<Integer>> routes = new ArrayList<>();
         List<Integer> shuffledCustomers = new ArrayList<>(customerIds);
-
-        // Use a new Random instance for shuffling
         Random random = new Random();
         Collections.shuffle(shuffledCustomers, random);
-
-        System.out.println("Shuffled Customers: " + shuffledCustomers); // Debugging output
 
         while (!shuffledCustomers.isEmpty()) {
             List<Integer> route = new ArrayList<>();

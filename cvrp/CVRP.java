@@ -1,9 +1,9 @@
 package cvrp;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
-import cvrp.Heuristics.GreedyHeuristic;
-import cvrp.Heuristics.RandomHeuristic;
+import cvrp.Heuristic;
 
 public class CVRP {
 
@@ -13,12 +13,105 @@ public class CVRP {
     private static int depotId = 1;
 
     public static void main(String[] args) throws IOException {
-        VRPUtils.parseVRPFile("C:\\Users\\tomju\\OneDrive\\Desktop\\uni\\ae\\input.vrp", nodes, customerIds, depotId);
-        Heuristic heuristic = new RandomHeuristic();
-        List<List<Integer>> routes = heuristic.calculateRoutes(nodes, customerIds, depotId, capacity);
-        printRoutes(routes);
-        double totalDistance = calculateTotalDistance(routes);
-        System.out.printf("Total distance: %.2f\n", totalDistance);
+        // Easily changeable test folder path
+        String testFolderPath = "c:\\Users\\tomju\\OneDrive\\Desktop\\uni\\AE\\test_instances";
+
+        File testFolder = new File(testFolderPath);
+
+        if (!testFolder.exists() || !testFolder.isDirectory()) {
+            System.out.println("Invalid test folder path: " + testFolderPath);
+            return;
+        }
+
+        File[] testFiles = testFolder.listFiles((dir, name) -> name.endsWith(".vrp"));
+        if (testFiles == null || testFiles.length == 0) {
+            System.out.println("No test instances found in folder: " + testFolderPath);
+            return;
+        }
+
+        // Create results folder if it doesn't exist
+        String resultsFolderPath = "c:\\Users\\tomju\\OneDrive\\Desktop\\uni\\AE\\results";
+        File resultsFolder = new File(resultsFolderPath);
+        if (!resultsFolder.exists()) {
+            resultsFolder.mkdirs();
+        }
+
+        // Generate a timestamp for the results file
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File csvFile = new File(resultsFolder, "results_" + timestamp + ".csv");
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(csvFile))) {
+            writer.write("Instance,Heuristic,TotalDistance,Routes\n");
+
+            // Dynamically load all heuristics in the cvrp.Heuristics package
+            List<Class<? extends Heuristic>> heuristics = getHeuristics();
+
+            for (Class<? extends Heuristic> heuristicClass : heuristics) {
+                String heuristicName = heuristicClass.getSimpleName();
+                System.out.println("Testing heuristic: " + heuristicName);
+
+                for (File testFile : testFiles) {
+                    System.out.println("Processing instance: " + testFile.getName());
+                    nodes.clear();
+                    customerIds.clear();
+
+                    VRPUtils.parseVRPFile(testFile.getAbsolutePath(), nodes, customerIds, depotId);
+
+                    Heuristic heuristic = heuristicClass.getDeclaredConstructor().newInstance();
+                    List<List<Integer>> routes = heuristic.calculateRoutes(nodes, customerIds, depotId, capacity);
+                    double totalDistance = calculateTotalDistance(routes);
+
+                    // Write results to CSV
+                    writer.write(testFile.getName() + "," + heuristicName + "," + totalDistance + ",\"");
+                    for (List<Integer> route : routes) {
+                        writer.write(route.toString().replace(",", " ").replace("[", "").replace("]", "") + " | ");
+                    }
+                    writer.write("\"\n");
+
+                    System.out.printf("Total distance for %s using %s: %.2f\n", testFile.getName(), heuristicName,
+                            totalDistance);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Results written to: " + csvFile.getAbsolutePath());
+
+        try {
+            String pythonScriptPath = "c:\\Users\\tomju\\OneDrive\\Desktop\\uni\\AE\\cvrp\\plot_results.py";
+            ProcessBuilder processBuilder = new ProcessBuilder("python", pythonScriptPath);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                System.out.println("Plotting completed successfully.");
+            } else {
+                System.out.println("Plotting script failed with exit code: " + exitCode);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to execute the plotting script.");
+            e.printStackTrace();
+        }
+    }
+
+    private static List<Class<? extends Heuristic>> getHeuristics() {
+        List<Class<? extends Heuristic>> heuristics = new ArrayList<>();
+        try {
+            heuristics.add(cvrp.Heuristics.RandomHeuristic.class);
+            heuristics.add(cvrp.Heuristics.GreedyHeuristic.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return heuristics;
     }
 
     public static int getCapacity() {
