@@ -13,19 +13,18 @@ public class RandomHeuristic implements Heuristic {
         List<List<Integer>> routes = new ArrayList<>();
         List<Integer> shuffledCustomers = new ArrayList<>(customerIds);
 
+        // Use a new Random instance for shuffling
         Random random = new Random();
         Collections.shuffle(shuffledCustomers, random);
 
-        System.out.println("Shuffled Customers: " + shuffledCustomers);
-        Set<Integer> unvisited = new HashSet<>(shuffledCustomers);
+        System.out.println("Shuffled Customers: " + shuffledCustomers); // Debugging output
 
-        while (!unvisited.isEmpty()) {
+        while (!shuffledCustomers.isEmpty()) {
             List<Integer> route = new ArrayList<>();
             route.add(depotId);
-            int currentId = depotId;
             int remainingCap = capacity;
 
-            Iterator<Integer> iterator = unvisited.iterator();
+            Iterator<Integer> iterator = shuffledCustomers.iterator();
             while (iterator.hasNext()) {
                 int cid = iterator.next();
                 Node candidate = nodes.get(cid);
