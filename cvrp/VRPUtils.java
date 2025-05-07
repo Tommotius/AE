@@ -14,7 +14,7 @@ public class VRPUtils {
         while ((line = reader.readLine()) != null) {
             line = line.trim();
             if (line.startsWith("CAPACITY")) {
-                SimpleCVRPHeuristic.capacity = Integer.parseInt(line.split(":")[1].trim());
+                CVRP.setCapacity(Integer.parseInt(line.split(":")[1].trim()));
             } else if (line.equals("NODE_COORD_SECTION")) {
                 inCoordSection = true;
                 inDemandSection = false;
@@ -28,12 +28,12 @@ public class VRPUtils {
                 int id = Integer.parseInt(parts[0]);
                 double x = Double.parseDouble(parts[1]);
                 double y = Double.parseDouble(parts[2]);
-                nodes.put(id, new Node(id, x, y, 0)); // demand to be filled later
+                nodes.put(id, new Node(id, x, y, 0));
             } else if (inDemandSection && !line.isEmpty()) {
                 String[] parts = line.split("\\s+");
                 int id = Integer.parseInt(parts[0]);
                 int demand = Integer.parseInt(parts[1]);
-                nodes.get(id).setDemand(demand); // Use setDemand() to set the demand
+                nodes.get(id).setDemand(demand);
                 if (id != depotId)
                     customerIds.add(id);
             }
